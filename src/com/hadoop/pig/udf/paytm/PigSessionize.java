@@ -1,3 +1,7 @@
+/*
+ * Author:Ravi Datt
+ * Date : 06-Jan-2016
+ */
 package com.hadoop.pig.udf.paytm;
 
 import java.io.IOException;
@@ -13,6 +17,10 @@ import org.apache.pig.data.Tuple;
 
 public class PigSessionize extends EvalFunc<String>{
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.apache.pig.EvalFunc#exec(org.apache.pig.data.Tuple)
+	 */
 	@Override
 	public String exec(Tuple input) throws IOException {
 		if (input == null || input.size() == 0){
@@ -21,6 +29,10 @@ public class PigSessionize extends EvalFunc<String>{
 		
 			try{
 			
+			/*
+			 * TreeMap will store session time in order from session start to session end.
+			 * Later get only those pages which have been hit with in 15 minutes of window from session start Time.
+			 */
 			Map<Long,String> map = new TreeMap<Long,String>();
 			String output="";
 			long startTime=0;
@@ -40,12 +52,12 @@ public class PigSessionize extends EvalFunc<String>{
 	        int timecount=-1;
 			for(Long key:map.keySet()){
 				
-				if(timecount==-1){
+				if(timecount==-1){// on very first iteration get the starttime and also set endTime
 					 startTime = key;
-					 endTime = startTime+timeinminutes*60*1000;
+					 endTime = startTime+timeinminutes*60*1000; // session starttime  + 15 minutes.
 				}
 					
-				if(key<=endTime){				
+				if(key<=endTime){// Only interested in those pages which haven been hit with in start and end time window.			
 					  String url = map.get(key);
 					  output=output+"\t"+url;
 				}
@@ -54,7 +66,7 @@ public class PigSessionize extends EvalFunc<String>{
 			
 			Date startDtTime=new Date(startTime);
 			Date endDtTime=new Date(endTime);
-			return "{"+startDtTime+","+endDtTime+"} , ["+output+"]";
+			return "{"+startDtTime+","+endDtTime+"} \t ["+output+"]";
 
 			}catch(Exception e){
 			throw new IOException("Caught exception processing input row ", e);

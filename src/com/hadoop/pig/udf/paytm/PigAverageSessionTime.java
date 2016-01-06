@@ -1,3 +1,7 @@
+/*
+ * Author:Ravi Datt
+ * Date : 06-Jan-2016
+ */
 package com.hadoop.pig.udf.paytm;
 
 import java.io.IOException;
@@ -19,6 +23,11 @@ import org.apache.pig.data.Tuple;
 
 public class PigAverageSessionTime extends EvalFunc<Long> {
 
+	/*
+	 * Get the DataBag from Tuple and collect pageHit startTime and endTime for each IP.
+	 * (non-Javadoc)
+	 * @see org.apache.pig.EvalFunc#exec(org.apache.pig.data.Tuple)
+	 */
 	@Override
 	public Long exec(Tuple input) throws IOException {
 		
@@ -42,8 +51,8 @@ public class PigAverageSessionTime extends EvalFunc<Long> {
 		}
 		
 		Collections.sort(list); // sort the list for date & time ascending order.
-		startTime = list.get(0);
-		endTime = list.get(list.size()-1);
+		startTime = list.get(0); // Get the session start datetime
+		endTime = list.get(list.size()-1);// Get the session end datetime
 		
 		totalsessionTime=endTime-startTime;
 		return totalsessionTime;

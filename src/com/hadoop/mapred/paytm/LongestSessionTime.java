@@ -1,3 +1,7 @@
+/*
+ * Author:Ravi Datt
+ * Date : 06-Jan-2016
+ */
 package com.hadoop.mapred.paytm;
 
 import java.io.IOException;
@@ -27,11 +31,16 @@ import org.apache.hadoop.util.ToolRunner;
 class LongestSessionTimeMapper extends Mapper<LongWritable, Text, Text, Text> {
 	Text key = new Text();
 	Text value = new Text();
+	
+	/*
+	 * Split each record of data row using \" and " ";
+	 * (non-Javadoc)
+	 * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+	 */
 
 	public void map(LongWritable ikey, Text ivalue, Context context) throws IOException, InterruptedException {
 
-		String split1[] = ivalue.toString().split("\""); // 1st split by quotes
-															// ""
+		String split1[] = ivalue.toString().split("\""); // 1st split by quotes ""
 		String split2[] = split1[0].split(" ");// 2nd split by blank space " "
 		String timestamp = split2[0]; // get the time stamp. Required*
 		String clientip = split2[2]; // IP address of the client. Required*
@@ -40,7 +49,7 @@ class LongestSessionTimeMapper extends Mapper<LongWritable, Text, Text, Text> {
 			clientip = clientip.substring(0, clientip.indexOf(":"));
 		}
 
-		key.set("LONGEST_SESSION_TIME");// we require the same key to find out
+		key.set("LONGEST_SESSION_TIME");// we require the same key so that we can have all IPs,TIMESTAMPs values to find out
 										// average at reducer side.
 		value.set(timestamp + "\t" + clientip);
 		context.write(key, value);
@@ -124,26 +133,31 @@ public class LongestSessionTime extends Configured implements Tool {
 
 	@Override
 	public int run(String[] args) throws Exception {
-		// Auto-generated method stub
 
+		// Job Name is "Longest Session Time"
 		Job job = Job.getInstance(getConf(), "Longest Session Time");
 
 		job.setJarByClass(com.hadoop.mapred.paytm.LongestSessionTime.class);
-		// mapper
+		// mapper class
 		job.setMapperClass(LongestSessionTimeMapper.class);
-		// reducer
+		// reducer class
 		job.setReducerClass(LongestSessionTimeReducer.class);
+		// One Reducer
 		job.setNumReduceTasks(1);
 
+		// Set the Mapper output Key and Value data type
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(Text.class);
 
+		// set Mapper Input and Output File Format
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 
+		// Set final Key (Text) and Value (DoubleWritable) data type
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(DoubleWritable.class);
 
+		// input and output location for Job
 		FileInputFormat.setInputPaths(job, new Path(args[0]));
 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
 

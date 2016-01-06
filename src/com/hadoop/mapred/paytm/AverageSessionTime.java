@@ -1,3 +1,7 @@
+/*
+ * Author:Ravi Datt
+ * Date : 06-Jan-2016
+ */
 package com.hadoop.mapred.paytm;
 
 import java.io.IOException;
@@ -24,11 +28,14 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 
-
-
 class AvgSessionMapper extends Mapper<LongWritable, Text, Text, Text> {
 	Text key = new Text();
 	Text value = new Text();
+	/*
+	 * Split each record of data row using \" and " ";
+	 * (non-Javadoc)
+	 * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+	 */
 	public void map(LongWritable ikey, Text ivalue, Context context) throws IOException, InterruptedException {
 		
 		String split1[] = ivalue.toString().split("\""); // 1st split by quotes ""
@@ -52,47 +59,33 @@ class AvgSessionReducer extends Reducer<Text, Text, Text, DoubleWritable> {
 	Map<String,List<Long>> map = new HashMap<String,List<Long>>();
 
 	
-	@Override
-    protected void cleanup(Context context) throws IOException, InterruptedException {
-		long totalTime=0;
-		int totalSessionsCount=0;
-		
-		for(String key : map.keySet())
-		{
-		   List<Long> timeList = (List<Long>)map.get(key);
-		   Long time = timeList.get(2);
-		   totalTime = totalTime + time;
-		   totalSessionsCount++;
-		   
-		}
-		
-		// now finally calculate the average totalTime/totalSessionsCount
-		
-		double avgTimeinms = totalTime/totalSessionsCount;
-		double avgTimeinMin = avgTimeinms/(1000*60);
-		
-		Text key = new Text();
-		DoubleWritable value = new DoubleWritable();
-		
-		key.set("AVERAGE SESSION TIME (In Minutes)");
-		value.set(avgTimeinMin);
-		
-		context.write(key, value);
-		
-	}
-    
+	
+    /*
+     * Reduce method would collect all sessions (Ip and TimeStamp) for Single Key AVERAGE_SESSION_TIME
+     * Group TimeStamp by client IP into HashMap.
+     * 
+     * (non-Javadoc)
+     * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+     */
 	
 	public void reduce(Text _key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-		
-		
 		for (Text val : values) {
 			String valStr[] = val.toString().split("\t");
 			if(valStr!=null && valStr.length>0){
 			String timeStamp = valStr[0];
 			Long pageHitTime = Instant.parse ( timeStamp ).toEpochMilli();
 			String clientIP = valStr[1];
+			
+			/*
+			 * This whole logic here is to find out Session StartTime and EndTime
+			 * so that total time of the session can be calculated easily.
+			 */
+			
+			// if IP already inserted as a key into Map. Reuse the existing List from Map.
+			// else create a new List for new IP.
 			if(map.containsKey(clientIP)){
 				List<Long> list = (List<Long>)map.get(clientIP);
+				
 				if(list.size()==1){
 					list.add(pageHitTime);
 					Long stTime = (Long)list.get(0);
@@ -128,6 +121,38 @@ class AvgSessionReducer extends Reducer<Text, Text, Text, DoubleWritable> {
 		}
 		
 	}
+	
+	
+	@Override
+    protected void cleanup(Context context) throws IOException, InterruptedException {
+		long totalTime=0;
+		int totalSessionsCount=0;
+		
+		for(String key : map.keySet())
+		{
+		   List<Long> timeList = (List<Long>)map.get(key);
+		   Long time = timeList.get(2);
+		   totalTime = totalTime + time;
+		   totalSessionsCount++;
+		   
+		}
+		
+		// now finally calculate the average totalTime/totalSessionsCount
+		
+		double avgTimeinms = totalTime/totalSessionsCount;
+		double avgTimeinMin = avgTimeinms/(1000*60);
+		
+		Text key = new Text();
+		DoubleWritable value = new DoubleWritable();
+		
+		key.set("AVERAGE SESSION TIME (In Minutes)");
+		value.set(avgTimeinMin);
+		
+		context.write(key, value);
+		
+	}
+	
+	
 
 }
 
@@ -141,26 +166,30 @@ public class AverageSessionTime extends Configured implements Tool {
 
 	@Override
 	public int run(String[] args) throws Exception {
-		//Auto-generated method stub
 		
-		Job job = Job.getInstance(getConf(), "Average Session Driver");
+		// Job Name is "Average Session Time"
+		Job job = Job.getInstance(getConf(), "Average Session Time");
 		
 		job.setJarByClass(com.hadoop.mapred.paytm.AverageSessionTime.class);
-		// mapper
+		// mapper class
 		job.setMapperClass(AvgSessionMapper.class);
-		// reducer
+		// reducer class
 		job.setReducerClass(AvgSessionReducer.class);
+		// One Reducer
 		job.setNumReduceTasks(1);
-		
+		// Set the Mapper output Key and Value data type
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(Text.class);
-
+        
+		// set Mapper Input and Output File Format
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 		
+		// Set final Key (Text) and Value (DoubleWritable) data type
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(DoubleWritable.class);
 		
+		// input and output location for Job
 		FileInputFormat.setInputPaths(job, new Path(args[0]));
 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
 

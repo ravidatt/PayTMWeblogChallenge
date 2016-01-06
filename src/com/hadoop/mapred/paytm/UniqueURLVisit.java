@@ -1,3 +1,7 @@
+/*
+ * Author:Ravi Datt
+ * Date : 06-Jan-2016
+ */
 package com.hadoop.mapred.paytm;
 
 import java.io.IOException;
@@ -24,6 +28,13 @@ import org.apache.hadoop.util.ToolRunner;
 class UniqueURLVisitMapper extends Mapper<LongWritable, Text, Text, Text> {
 	Text key = new Text();
 	Text value = new Text();
+	
+	/*
+	 * Split each record of data row using \" and " ";
+	 * (non-Javadoc)
+	 * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+	 */
+	
 	public void map(LongWritable ikey, Text ivalue, Context context) throws IOException, InterruptedException {		
 		String logentry[] = ivalue.toString().split("\"");
 		String split1[]=logentry[0].split(" ");
@@ -33,9 +44,11 @@ class UniqueURLVisitMapper extends Mapper<LongWritable, Text, Text, Text> {
 		if(request.length>0){
 		 requestURL = request[1];
 		}
-		
+		/*
+		 * Set IP as key and URL as value
+		 */
 		if(client.indexOf(":")!=-1){
-		 key.set(client.substring(0, client.indexOf(":")));
+		 key.set(client.substring(0, client.indexOf(":"))); // remove the port from IP if there
 		}
 		else{
 		 key.set(client);
@@ -51,11 +64,13 @@ class UniqueURLVisitReducer extends Reducer<Text, Text, Text, Text> {
 	
 	public void reduce(Text _key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 		Map<String,List<String>> map = new TreeMap<String,List<String>>();
-		
+		/*
+		 * Get all values (URL) per Key(IP)
+		 */
 		for (Text val : values) {
 			if(map.containsKey(_key.toString())){
 				List<String> list = (List<String>)map.get(_key.toString());
-				if(!list.contains(val.toString())){
+				if(!list.contains(val.toString())){ // Ignore if URL already exists in List to remove redundancy.
 				  list.add(val.toString());
 				  map.put(_key.toString(),list);
 				}
@@ -66,7 +81,7 @@ class UniqueURLVisitReducer extends Reducer<Text, Text, Text, Text> {
 				map.put(_key.toString(),list);
 			}
 		}
-		value.set(((List<String>)map.get(_key.toString())).toString());
+		value.set(((List<String>)map.get(_key.toString())).toString()); // emit IP and unique URLs to HDFS.
 		context.write(_key, value);
 		
 	}
@@ -88,21 +103,27 @@ public class UniqueURLVisit extends Configured implements Tool {
 		Job job = Job.getInstance(getConf(), "Unique URL Visit");
 		
 		job.setJarByClass(com.hadoop.mapred.paytm.UniqueURLVisit.class);
-		// mapper
+		// mapper class
 		job.setMapperClass(UniqueURLVisitMapper.class);
-		// reducer
+		// reducer class
 		job.setReducerClass(UniqueURLVisitReducer.class);
+		
+		// one reducer
 		job.setNumReduceTasks(1);
 		
+		// Set the Mapper output Key and Value data type
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(Text.class);
 
+		// set Mapper Input and Output File Format
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
 		
+		// Set final Key (Text) and Value (Text) data type
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
 		
+		// input and output location for Job
 		FileInputFormat.setInputPaths(job, new Path(args[0]));
 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
