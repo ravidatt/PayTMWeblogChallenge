@@ -1,20 +1,20 @@
 Paytm Weblog Challenge
 
-<h2> Map Reduce </h2>:
+<h2> Map Reduce </h2>
 
 
-	1) <b> jar file name : paytm.jar ( this file has Mapper, Reducer, Driver classes as well PIG UDF functions classes) </b>
+	1)  jar file name : paytm.jar ( this file has Mapper, Reducer, Driver classes as well PIG UDF functions classes) 
 
-	2) <b> Data File Name: weblog.zip </b>
+	2)  Original Data File Name: weblog.zip 
 
-	3) <b> create new dirs in HDFS and Move data file to HDFS using following linux commands: </b>
+	3)  To create new dirs in HDFS and can move data file (weblog.log in weblog.zip file) to HDFS using following hadoop based commands: 
 
 		A) hdfs dfs -mkdir /user
 		B) hdfs dfs -mkdir /user/paytm
 		C) hdfs dfs -put /user/hduser/weblog.log /user/paytm/weblog.log
 
 
-	4) <b> Execute mapreduce jobs using: </b>
+	4)  To execute 4 different mapreduce jobs using: 
 
 	i)  hadoop jar paytm.jar com.hadoop.mapred.paytm.SessionMapper.LongestSessionTime /user/paytm/weblog.log /user/paytm/MRoutput/  
 	    LongestSessionTime.dat
@@ -25,17 +25,17 @@ Paytm Weblog Challenge
 	iv) hadoop jar paytm.jar com.hadoop.mapred.paytm.SessionMapper.Sessionize /user/paytm/weblog.log /user/paytm/MRoutput/Sessionize.dat
 
 
-	5) <b> out put Files (after running MR jobs) can be found under MRoutput folder: </b>
+	5)  Executed MR jobs's output Files can be found under MRoutput folder: 
 
 	i) LongestSessionTime.dat
 	ii) UniqueURLVisit.dat   
 	iii) AverageSessionTime.dat   
 	iv) Sessionize.dat
 
-	6) <b> Source File: PayTMWeblogChallenge-src.zip </b>
+	6)  Source Files: PayTMWeblogChallenge-src.zip 
 
 
-<h2> Pig </h2>:
+<h2> Pig </h2>
 
 	i) Pig Script File : /pigScript/webLogPigScript.pig
 
