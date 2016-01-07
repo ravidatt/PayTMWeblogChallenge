@@ -95,12 +95,12 @@
    4) Store final output into file FINAL_LONGEST_SESSION and push to HDFS
 */
 
-	WEBLOG_TIMEZONE_IP_REQUEST = FOREACH weblog GENERATE GetMilliSecond(ToDate(timezone)) AS dttime, 	
+	WEBLOG_TIMEZONE_IP_REQUEST = FOREACH weblog GENERATE ToMilliSeconds(ToDate(timezone)) AS (dttime:long), 	
 	org.apache.pig.piggybank.evaluation.string.SUBSTRING		
 	(client,0,org.apache.pig.piggybank.evaluation.string.INDEXOF(client,':')) as IP, request_url;
 
 
-         SESSION_TIME_IN_ORDER =
+         SESSION_TIME =
              FOREACH (group WEBLOG_TIMEZONE_IP_REQUEST by IP) {
                  ma = MAX(WEBLOG_TIMEZONE_IP_REQUEST.dttime);
                  mi = MIN(WEBLOG_TIMEZONE_IP_REQUEST.dttime);
@@ -108,6 +108,8 @@
              };
 
 
-         SESSION_ORDER = ORDER SESSION_TIME_IN_ORDER BY SessionTime DESC; 
+         SESSION_ORDER = ORDER SESSION_TIME BY SessionTime DESC; 
          LONGEST_SESSION = LIMIT SESSION_ORDER 1;
          store LONGEST_SESSION into 'FINAL_LONGEST_SESSION';
+
+
