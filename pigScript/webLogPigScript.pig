@@ -6,7 +6,7 @@
 
 -- register paytm.jar file where UDF functions are written to process weblog data.
 
-       REGISTER /home/hduser/mapper/paytm.jar;
+       REGISTER /home/hduser/workspace/PayTMWeblogChallenge/paytm.jar;
 
 /*
    ************* get Timezone,clientIP and request URL into  WEBLOG_TIMEZONE_IP_REQUEST *************
@@ -47,7 +47,7 @@
     4) Store final output into file FINAL_AVG_SESSION_TIME and push to HDFS
 */
 
-        session_time_for_ip = FOREACH grouped_weblog_timezone generate group,com.hadoop.pig.udf.paytm.PigAverageSessionTime(*)/60000 as sessionTime;
+        session_time_for_ip = FOREACH GROUPED_WEBLOG_TIMEZONE_IP_REQUEST generate group,com.hadoop.pig.udf.paytm.PigAverageSessionTime(*)/60000 as sessionTime;
         GROUP_ALL = group session_time_for_ip All;
 
      -- one way to find out average
@@ -94,6 +94,11 @@
    3) Get top most engaged user;
    4) Store final output into file FINAL_LONGEST_SESSION and push to HDFS
 */
+
+	WEBLOG_TIMEZONE_IP_REQUEST = FOREACH weblog GENERATE GetMilliSecond(ToDate(timezone)) AS dttime, 	
+	org.apache.pig.piggybank.evaluation.string.SUBSTRING		
+	(client,0,org.apache.pig.piggybank.evaluation.string.INDEXOF(client,':')) as IP, request_url;
+
 
          SESSION_TIME_IN_ORDER =
              FOREACH (group WEBLOG_TIMEZONE_IP_REQUEST by IP) {
